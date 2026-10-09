@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: doctor_content_db
+      POSTGRES_USER: doctor_app
+      POSTGRES_PASSWORD: ChangeThisPassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/doctor_content_db
+      DB_USER: doctor_app
+      DB_PASSWORD: ChangeThisPassword
+    depends_on:
+      - db
+    shm_size: "1gb"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
