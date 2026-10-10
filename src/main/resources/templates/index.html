@@ -1,43 +1,1156 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Doctor Content App</title>
-    <!-- Bootstrap CSS for easy styling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Doctor Content App — Medical News Intelligence</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        .card-img-top { height: 200px; object-fit: cover; }
-        .speciality-badge { position: absolute; top: 10px; right: 10px; z-index: 10; }
-        .card { transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); }
+        :root {
+            --brand: #0d6efd;
+            --brand-strong: #0a58ca;
+            --brand-dark: #084298;
+            --brand-soft: #e7f1ff;
+            --ink: #1e293b;
+            --muted: #64748b;
+            --line: #dbe7f7;
+            --shadow: 0 4px 12px rgba(13, 110, 253, 0.08);
+            --radius: 12px;
+            --nav-h: 64px;
+            --h: 215;
+        }
+        html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+        img { max-width: 100%; }
+        body { background-color: #f5f9ff; color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+        :focus-visible { outline: 3px solid rgba(13, 110, 253, .55); outline-offset: 2px; }
+
+        /* ---------- Website navbar ---------- */
+        .site-nav { background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 2px 6px rgba(13, 110, 253, 0.06); min-height: var(--nav-h); z-index: 40; }
+        .site-nav .navbar-brand { display: flex; align-items: center; padding: 0; margin-right: 1rem; }
+        .brand-img { height: 44px; width: auto; max-width: 200px; object-fit: contain; display: block; }
+        .brand-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 1.15rem; }
+        .site-nav .nav-link { color: var(--ink); font-weight: 500; padding: .5rem .9rem; border-radius: 8px; transition: all 0.2s; }
+        .site-nav .nav-link:hover { color: var(--brand-strong); background: var(--brand-soft); }
+
+        /* ---------- panels ---------- */
+        .panel { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+        .panel-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; color: var(--brand-dark); }
+        .panel-title .bi { color: var(--brand); }
+        .form-label { font-weight: 600; font-size: .85rem; color: #475569; }
+
+        /* ---------- buttons ---------- */
+        .btn-soft { background: #fff; border: 1px solid #bfd4f2; color: var(--ink); font-weight: 500; }
+        .btn-soft:hover { border-color: var(--brand); color: var(--brand-strong); background: var(--brand-soft); }
+        .btn-soft.active, .btn-soft:active { background: var(--brand-soft) !important; border-color: var(--brand) !important; color: var(--brand-strong) !important; }
+        .btn-soft:disabled { opacity: .55; }
+
+        /* ---------- toolbar ---------- */
+        .toolbar-wrap { position: static; z-index: 30; background: rgba(245, 249, 255, .96); backdrop-filter: blur(8px); padding: .75rem 0; border-bottom: 1px solid var(--line); }
+        .chip {
+            display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .8rem; border-radius: 999px;
+            border: 1px solid #bfd4f2; background: #fff; color: var(--ink); font-size: .84rem; font-weight: 500; cursor: pointer;
+            transition: background .2s, border-color .2s;
+        }
+        .chip .count { color: var(--muted); font-weight: 600; font-size: .78rem; }
+        .chip:hover { border-color: var(--brand); background: var(--brand-soft); }
+        .chip.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+        .chip.active .count { color: inherit; opacity: .85; }
+
+        /* ---------- results ---------- */
+        .results.grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr)); gap: 1.5rem; }
+        .results.list-view { display: flex; flex-direction: column; gap: 1.25rem; }
+
+        /* ---------- Cards ---------- */
+        .news-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+        }
+        .news-card:hover { box-shadow: 0 10px 25px rgba(13, 110, 253, 0.12); border-color: rgba(13, 110, 253, 0.4); transform: translateY(-2px); }
+        .list-view .news-card { flex-direction: row; }
+
+        /* Media / Image */
+        .media { position: relative; aspect-ratio: 16 / 10; width: 100%; overflow: hidden; background: var(--brand-soft); flex-shrink: 0; }
+        .list-view .media { width: 280px; align-self: stretch; aspect-ratio: auto; min-height: 175px; }
+        .media .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 2.2rem; color: hsl(var(--h, 215) 60% 50%); background: hsl(var(--h, 215) 85% 94%); }
+        .media img { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .media img.bg { object-fit: cover; filter: blur(18px) saturate(1.15); transform: scale(1.2); opacity: .55; display: none; }
+        .media img.fg { object-fit: cover; }
+        .fit-contain .media img.bg { display: block; }
+        .fit-contain .media img.fg { object-fit: contain; }
+
+        .spec-badge {
+            position: absolute; left: .7rem; top: .7rem; z-index: 2; padding: .3rem .7rem; border-radius: 999px; font-size: .76rem; font-weight: 700;
+            color: var(--brand-dark); background: rgba(255, 255, 255, .96); box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .remove-btn {
+            position: absolute; right: .6rem; top: .6rem; z-index: 2; width: 32px; height: 32px; border-radius: 50%; border: 0;
+            background: rgba(8, 66, 152, .8); color: #fff; display: grid; place-items: center; font-size: .85rem; opacity: 0; transition: all .2s;
+        }
+        .remove-btn:hover { background: #ef4444; }
+        .news-card:hover .remove-btn, .remove-btn:focus-visible { opacity: 1; }
+        @media (hover: none) { .remove-btn { opacity: 1; } }
+
+        .card-text-area { padding: 1.25rem; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .meta { color: var(--muted); font-size: .78rem; display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: .6rem; font-weight: 500; }
+        .meta span { display: inline-flex; align-items: center; gap: .3rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .news-title { font-weight: 700; font-size: 1.1rem; line-height: 1.4; margin: 0 0 .6rem; color: #0f172a; overflow-wrap: anywhere;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .news-preview { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 0 0 1.2rem; cursor: pointer; overflow-wrap: anywhere;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; transition: color 0.2s; }
+        .news-preview:hover { color: #475569; }
+        .news-preview.expanded { -webkit-line-clamp: unset; display: block; }
+        .card-actions { margin-top: auto; display: flex; gap: .5rem; align-items: center; }
+
+        /* ---------- skeleton ---------- */
+        .skeleton .media, .skeleton .line { background: linear-gradient(90deg, #e2ecfa 25%, #f1f6fe 50%, #e2ecfa 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite linear; }
+        .skeleton .line { height: 12px; border-radius: 6px; margin-bottom: .6rem; }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) { .skeleton .media, .skeleton .line { animation: none; } * { transition: none !important; scroll-behavior: auto !important; } }
+
+        /* ---------- dropzone / modal redesigned ---------- */
+        .dropzone { border: 2px dashed #a3c4f9; border-radius: 1.25rem; padding: 3.5rem 1.5rem; text-align: center; cursor: pointer; background: #fff; transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .dropzone:hover, .dropzone.over { border-color: var(--brand); background: var(--brand-soft); transform: scale(1.02); }
+        .dropzone.busy { opacity: .55; pointer-events: none; transform: none; }
+        .modal-content { border: 0; border-radius: 1.25rem; overflow: hidden; }
+        .upload-icon-box { display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); margin-bottom: 1.25rem; transition: transform 0.3s; }
+        .dropzone:hover .upload-icon-box { transform: translateY(-5px); }
+
+        .empty { text-align: center; padding: 4rem 1rem; border: 2px dashed #bfd4f2; border-radius: var(--radius); background: #fff; }
+        .empty .bi { font-size: 3rem; color: var(--brand); margin-bottom: 1rem; display: inline-block; }
+
+        /* ---------- footer ---------- */
+        .site-footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; padding: 1.25rem 0; margin-top: 3rem;}
+
+        @media (max-width: 767px) {
+            .list-view .news-card { flex-direction: column; }
+            .list-view .media { width: 100%; aspect-ratio: 16 / 10; min-height: 0; }
+        }
+        /* ---------- Responsive ---------- */
+        @media (min-width: 992px) {
+            html { scroll-padding-top: 130px; }
+            .toolbar-wrap { position: sticky; top: var(--nav-h); }
+        }
+        @media (max-width: 991.98px) {
+            .site-nav .navbar-nav { padding: .5rem 0; }
+            .toolbar-wrap { background: transparent; border-bottom: 0; padding-top: .25rem; }
+        }
+        @media (max-width: 575.98px) {
+            :root { --nav-h: 56px; }
+            .brand-img { height: 36px; max-width: 150px; }
+            .brand-logo { width: 32px; height: 32px; }
+            .panel { padding: 1rem !important; }
+            .toolbar-controls #sortSel { flex: 1 1 100%; }
+            .toolbar-controls .btn-group, .toolbar-controls .dropdown, .toolbar-controls > .btn { flex: 1 1 auto; }
+            .toolbar-controls .btn-group .btn, .toolbar-controls .dropdown .btn { width: 100%; }
+            #summary { margin-left: 0 !important; width: 100%; }
+            .news-title { font-size: 1.02rem; }
+            .dropzone { padding: 2.5rem 1rem; }
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container py-5">
-    <h2 class="mb-4 text-center text-primary fw-bold">Trending Topics</h2>
+<!-- ===== Website Navbar ===== -->
+<nav class="navbar navbar-expand-lg site-nav sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#" aria-label="Doctor Content App">
+            <img th:src="@{/images/digidr.png}" alt="DigiDr logo" class="brand-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <span class="brand-logo" style="display:none;"><i class="bi bi-activity"></i></span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav ms-auto gap-lg-1">
+                <li class="nav-item"><a class="nav-link" href="#scrapeTitle">Scrape</a></li>
+                <li class="nav-item"><a class="nav-link" href="#feedTitle">Add RSS</a></li>
+                <li class="nav-item"><a class="nav-link" href="#feedSection">Intelligence Feed</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
 
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        <!-- Loop through each topic in the database -->
-        <div class="col" th:each="topic : ${topics}">
-            <div class="card h-100 shadow-sm position-relative">
 
-                <span class="badge bg-primary speciality-badge" th:text="${topic.speciality}"></span>
+<div class="container py-4 py-md-5">
 
-                <!-- Show image if it exists, otherwise show a placeholder -->
-                <img th:if="${topic.imageUrl != null}" th:src="${topic.imageUrl}" class="card-img-top" alt="News Image">
-                <img th:if="${topic.imageUrl == null}" src="https://via.placeholder.com/400x200?text=No+Image" class="card-img-top" alt="Placeholder">
+    <!-- Server messages -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${success}">Success</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}">Error</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title fw-bold" th:text="${topic.title}"></h5>
-                    <p class="card-text text-muted small" th:text="${topic.contentPreview}"></p>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <section class="panel p-3 p-md-4 h-100" aria-labelledby="scrapeTitle">
+                <h2 id="scrapeTitle" class="panel-title"><i class="bi bi-link-45deg"></i> Scrape Custom Article URL or API</h2>
 
-                    <a th:href="${topic.sourceUrl}" target="_blank" class="btn btn-outline-primary mt-auto w-100">Read Full Article</a>
+                <form id="scrapeForm" onsubmit="event.preventDefault(); triggerScrape();">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="speciality">Speciality</label>
+                            <select class="form-select" id="speciality" required>
+                                <option value="All" selected>All Specialities</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="limit">Max articles</label>
+                            <select class="form-select" id="limit">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="url">Website / API / RSS Target URL</label>
+                            <input type="text" inputmode="url" class="form-control form-control-lg" id="url" placeholder="https://..." required autocomplete="off">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" id="scrapeBtn" class="btn btn-primary btn-lg w-100 fw-bold mt-2 shadow-sm">
+                                <span id="btnSpinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                                <span id="btnText"><i class="bi bi-cloud-arrow-down-fill me-1"></i> Start Scraping</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="statusAlert" class="alert mt-3 mb-0 d-none shadow-sm" role="alert"></div>
+            </section>
+        </div>
+
+        <!-- ===== Saved RSS feeds (Add Only) ===== -->
+        <div class="col-lg-4">
+            <section class="panel p-3 p-md-4 h-100" aria-labelledby="feedTitle">
+                <h2 id="feedTitle" class="panel-title"><i class="bi bi-rss-fill"></i> Add RSS Feed</h2>
+                <p class="small text-muted mb-4">Register a new RSS feed source to expand your intelligence gathering capabilities.</p>
+
+                <form th:action="@{/admin/add-feed}" method="post">
+                    <div class="mb-3">
+                        <label class="form-label" for="feedSpeciality">Target Speciality</label>
+                        <select class="form-select" id="feedSpeciality" name="speciality" required>
+                            <option value="All">All Specialities</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label" for="feedUrl">RSS Feed URL</label>
+                        <input type="url" class="form-control" id="feedUrl" name="feedUrl" placeholder="https://.../rss" required>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary w-100 fw-bold"><i class="bi bi-plus-lg me-1"></i> Add Source</button>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <!-- ===== Results header ===== -->
+    <h4 id="feedSection" class="mb-0 fw-bold pb-2 mt-3" style="color: var(--brand-dark);">Intelligence Feed</h4>
+
+    <!-- ===== Toolbar ===== -->
+    <div class="toolbar-wrap mb-4 rounded px-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-lg">
+                <div class="input-group rounded shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="search" id="searchBox" class="form-control border-start-0 ps-0" placeholder="Search by title, text or source website..." aria-label="Search scraped articles">
+                </div>
+            </div>
+            <div class="col-12 col-lg-auto d-flex flex-wrap gap-2 toolbar-controls">
+                <select id="sortSel" class="form-select w-auto shadow-sm" aria-label="Sort articles">
+                    <option value="newest">Newest First</option>
+                    <option value="title">Alphabetical (A-Z)</option>
+                    <option value="speciality">Group by Speciality</option>
+                </select>
+
+                <div class="btn-group shadow-sm" role="group" aria-label="Layout">
+                    <button type="button" class="btn btn-soft" id="viewGrid" title="Grid view" aria-label="Grid view"><i class="bi bi-grid-fill"></i></button>
+                    <button type="button" class="btn btn-soft" id="viewList" title="List view" aria-label="List view"><i class="bi bi-list-ul"></i></button>
+                </div>
+
+                <div class="btn-group shadow-sm" role="group" aria-label="Image fit">
+                    <button type="button" class="btn btn-soft" id="fitFill" title="Fill the frame (crops edges)"><i class="bi bi-arrows-fullscreen"></i></button>
+                    <button type="button" class="btn btn-soft" id="fitContain" title="Show the whole image"><i class="bi bi-aspect-ratio"></i></button>
+                </div>
+
+                <!-- Download -->
+                <div class="dropdown">
+                    <button class="btn btn-primary fw-bold dropdown-toggle shadow-sm" type="button" id="downloadBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-cloud-download me-1"></i> Download
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><button type="button" class="dropdown-item py-2" id="dlAll"><i class="bi bi-files me-2 text-primary"></i>All Articles <span class="text-muted small ms-2" id="dlAllCount"></span></button></li>
+                        <li><button type="button" class="dropdown-item py-2" id="dlView"><i class="bi bi-funnel me-2 text-primary"></i>Current View <span class="text-muted small ms-2" id="dlViewCount"></span></button></li>
+                    </ul>
+                </div>
+
+                <!-- Upload -->
+                <button type="button" class="btn btn-soft shadow-sm text-primary fw-medium" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="bi bi-cloud-upload me-1"></i> Upload CSV
+                </button>
+
+                <button type="button" class="btn btn-soft text-danger shadow-sm" id="clearBtn" title="Remove all articles from this dashboard" aria-label="Clear all">
+                    <i class="bi bi-trash3-fill"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+            <div id="chips" class="d-flex flex-wrap gap-2"></div>
+            <span id="summary" class="ms-auto small fw-medium text-muted"></span>
+        </div>
+    </div>
+
+    <!-- ===== Results ===== -->
+    <section aria-label="Scraped articles">
+        <div id="resultsList" class="results grid-view fit-fill"></div>
+    </section>
+</div>
+
+<!-- ===== Footer ===== -->
+<footer class="site-footer text-center">
+    <div class="container">&copy; Doctor Content App &middot; Medical News Intelligence</div>
+</footer>
+
+<!-- ===== ADVANCED Upload modal ===== -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0">
+
+            <div class="modal-header bg-white border-bottom px-4 py-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-cloud-upload fs-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="modal-title h5 fw-bold mb-0 text-dark" id="uploadTitle">Import Intelligence Data</h2>
+                        <p class="text-muted small mb-0">Upload articles seamlessly to the DigiDr API</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4 bg-light bg-opacity-50">
+                <div id="dropzone" class="dropzone shadow-sm" tabindex="0" role="button" aria-label="Choose a CSV file or drop it here">
+                    <div class="upload-icon-box">
+                        <i class="bi bi-file-earmark-spreadsheet-fill fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-1 fs-5">Drag & drop your CSV file here</h4>
+                    <p class="text-muted mb-3">or <span class="text-primary fw-medium text-decoration-underline">browse files</span> from your computer</p>
+
+                    <div class="d-flex align-items-center justify-content-center gap-4 text-muted small mt-4 pt-3 border-top border-2 border-dashed w-75 mx-auto">
+                        <span><i class="bi bi-check-circle-fill text-success me-1"></i> Max 5MB Limit</span>
+                        <span><i class="bi bi-check-circle-fill text-success me-1"></i> Auto-detects DB & UI Formats</span>
+                    </div>
+
+                    <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+                </div>
+
+                <div id="fileCard" class="border rounded-4 p-3 mt-4 bg-white shadow-sm d-none transition-all">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="bi bi-filetype-csv text-success" style="font-size: 2.5rem; line-height: 1;"></i>
+                        <div class="flex-grow-1" style="min-width:0">
+                            <div class="fw-bold text-break fs-6 text-dark" id="fileName"></div>
+                            <div class="text-muted small mt-1" id="fileStats"></div>
+                            <div class="small text-warning-emphasis mt-2 fw-medium" id="fileSkipped"></div>
+                        </div>
+                        <button type="button" class="btn-close" id="clearFileBtn" aria-label="Remove file"></button>
+                    </div>
+                </div>
+
+                <div id="uploadResult" class="alert mt-4 mb-0 d-none shadow-sm rounded-3" role="status"></div>
+            </div>
+
+            <div class="modal-footer border-top px-4 py-3 bg-white justify-content-between">
+                <button type="button" class="btn btn-link text-decoration-none text-muted fw-medium p-0 small" id="templateBtn">
+                    <i class="bi bi-download me-1"></i> Download Template File
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light fw-medium px-4 rounded-pill border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm" id="uploadBtn" disabled>
+                        <span id="upSpinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Start Upload
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ===== Toasts ===== -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000">
+    <div id="toastEl" class="toast align-items-center border-0 shadow-lg" role="status" aria-live="polite" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-medium" id="toastBody"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="none">
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
+        c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+    const isHttp = u => /^https?:\/\//i.test((u || '').trim());
+
+    function hostOf(u) {
+        try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
+    }
+
+    const HUES = {'Cardiology': 215, 'Neorologist': 225, 'Neurology': 225, 'Oncologist': 205, 'Oncology': 205,
+        'Pediatrician': 195, 'Pediatrics': 195, 'Dentist': 210, 'Dentistry': 210, 'General Physician': 220, 'General Health': 220};
+    function hueOf(name) {
+        if (HUES[name] != null) return HUES[name];
+        let h = 0;
+        for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) % 360;
+        return 200 + (h % 30);
+    }
+
+    const store = {
+        get(k, fallback) { try { const v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
+        set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } }
+    };
+
+    const KEYS = {prefs: 'doctorapp.prefs.v1'};
+    const MAX_STORED = 500;
+
+    // =====================================================================
+    // State
+    // =====================================================================
+    // FIX: Start items fresh on every page load so old data does not stick around.
+    let items = [];
+    let prefs = Object.assign({view: 'grid', fit: 'fill', sort: 'newest'}, store.get(KEYS.prefs, {}));
+    let filters = {q: '', spec: 'All'};
+    let loading = false;
+
+    function saveItems() { /* Empty function to prevent saving to browser memory */ }
+    function savePrefs() { store.set(KEYS.prefs, prefs); }
+    function toast(message, kind) {
+        const el = $('toastEl');
+        el.className = 'toast align-items-center border-0 text-bg-' + (kind || 'dark');
+        $('toastBody').textContent = message;
+        bootstrap.Toast.getOrCreateInstance(el, {delay: 3500}).show();
+    }
+
+    function showStatus(kind, html) {
+        const el = $('statusAlert');
+        el.className = 'alert mt-3 mb-0 alert-' + kind;
+        el.innerHTML = html;
+    }
+
+    function scrapeAll() {
+        $('speciality').value = 'All';
+        triggerScrape();
+    }
+    let specialityNames = [];
+    const SPEC_FALLBACK = ['Cardiology', 'Neurology', 'Oncology', 'Pediatrics', 'Dentistry', 'General Health'];
+
+    function extractSpecialityNames(data) {
+        const list = Array.isArray(data) ? data : ((data && (data.data || data.items || data.result)) || []);
+        const names = list
+            .map(x => typeof x === 'string' ? x : (x && (x.speciality || x.specialty || x.name)))
+            .map(s => String(s || '').trim())
+            .filter(Boolean);
+        return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+    }
+
+    async function loadSpecialities() {
+        const selects = [$('speciality'), $('feedSpeciality')];
+        selects.forEach(s => s.disabled = true);
+        let names;
+        try {
+            const res = await fetch('/api/specialities', {headers: {'Accept': 'application/json'}});
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            names = extractSpecialityNames(await res.json());
+            if (!names.length) throw new Error('empty list');
+            specialityNames = names;
+        } catch (e) {
+            names = SPEC_FALLBACK;
+            toast('Could not load specialities from DigiDr. Showing the default list.', 'warning');
+        }
+        selects.forEach(sel => {
+            sel.innerHTML = '<option value="All" selected>All Specialities</option>' +
+                names.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+            sel.disabled = false;
+        });
+    }
+    function normalizeItem(o) {
+        return {
+            title: String(o.title || '').trim(),
+            speciality: String(o.speciality || 'General Physician').trim() || 'General Physician',
+            sourceUrl: String(o.sourceUrl || '').trim(),
+            imageUrl: isHttp(o.imageUrl) ? String(o.imageUrl).trim() : '',
+            contentPreview: String(o.contentPreview || '').trim(),
+            host: String(o.host || hostOf(o.sourceUrl) || '').trim(),
+            addedAt: o.addedAt || new Date().toISOString()
+        };
+    }
+
+    function addItems(list, overwrite) {
+        let added = 0, updated = 0, skipped = 0;
+        const fresh = [];
+        for (const raw of list) {
+            const it = normalizeItem(raw);
+            const idx = items.findIndex(x => x.sourceUrl === it.sourceUrl);
+            if (idx >= 0) {
+                if (overwrite) { items[idx] = Object.assign({}, items[idx], it, {addedAt: items[idx].addedAt}); updated++; }
+                else skipped++;
+            } else if (!fresh.some(x => x.sourceUrl === it.sourceUrl)) {
+                fresh.push(it); added++;
+            } else skipped++;
+        }
+        items = fresh.concat(items);
+        saveItems();
+        return {added, updated, skipped};
+    }
+
+    function visibleItems() {
+        const q = filters.q.trim().toLowerCase();
+        let list = items.filter(it =>
+            (filters.spec === 'All' || it.speciality === filters.spec) &&
+            (!q || (it.title + ' ' + it.contentPreview + ' ' + it.host + ' ' + it.speciality).toLowerCase().includes(q)));
+        if (prefs.sort === 'title') list = list.slice().sort((a, b) => a.title.localeCompare(b.title));
+        else if (prefs.sort === 'speciality') list = list.slice().sort((a, b) => a.speciality.localeCompare(b.speciality) || a.title.localeCompare(b.title));
+        return list;
+    }
+
+
+    function cardHtml(it) {
+        const h = hueOf(it.speciality);
+        const media = `
+            <div class="media" style="--h:${h}">
+                <div class="ph"><i class="bi bi-newspaper"></i></div>
+                ${it.imageUrl ? `
+                <img class="bg" src="${esc(it.imageUrl)}" alt="" aria-hidden="true" loading="lazy" referrerpolicy="no-referrer">
+                <img class="fg" src="${esc(it.imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+                <span class="spec-badge">${esc(it.speciality)}</span>
+                <button type="button" class="remove-btn" data-remove="${esc(it.sourceUrl)}" aria-label="Remove this article" title="Remove"><i class="bi bi-trash3-fill"></i></button>
+            </div>`;
+        const date = new Date(it.addedAt);
+        const dateText = isNaN(date) ? '' : date.toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'});
+        return `
+            <article class="news-card">
+                ${media}
+                <div class="card-text-area">
+                    <div class="meta">
+                        ${it.host ? `<span><i class="bi bi-globe2 text-primary"></i>${esc(it.host)}</span>` : ''}
+                        ${dateText ? `<span><i class="bi bi-clock"></i>${esc(dateText)}</span>` : ''}
+                    </div>
+                    <h3 class="news-title">${esc(it.title)}</h3>
+                    <p class="news-preview" title="Click to expand">${esc(it.contentPreview)}</p>
+                    <div class="card-actions">
+                        <a href="${esc(safeUrl(it.sourceUrl))}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm fw-bold px-3 rounded-pill">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Read
+                        </a>
+                        <button type="button" class="btn btn-light btn-sm border rounded-pill px-3" data-copy="${esc(it.sourceUrl)}" title="Copy link" aria-label="Copy link"><i class="bi bi-link-45deg"></i> Copy Link</button>
+                    </div>
+                </div>
+            </article>`;
+    }
+
+    function skeletonHtml(n) {
+        return Array.from({length: n}, () => `
+            <div class="news-card skeleton" aria-hidden="true">
+                <div class="media"></div>
+                <div class="card-text-area">
+                    <div class="line" style="width:40%"></div>
+                    <div class="line" style="width:90%;height:16px"></div>
+                    <div class="line" style="width:75%;height:16px"></div>
+                    <div class="line" style="width:100%"></div>
+                    <div class="line" style="width:85%"></div>
+                </div>
+            </div>`).join('');
+    }
+
+    function render() {
+        const list = visibleItems();
+        const box = $('resultsList');
+        box.className = 'results ' + (prefs.view === 'list' ? 'list-view' : 'grid-view') + ' ' + (prefs.fit === 'contain' ? 'fit-contain' : 'fit-fill');
+
+        $('viewGrid').classList.toggle('active', prefs.view !== 'list');
+        $('viewList').classList.toggle('active', prefs.view === 'list');
+        $('fitFill').classList.toggle('active', prefs.fit !== 'contain');
+        $('fitContain').classList.toggle('active', prefs.fit === 'contain');
+        $('sortSel').value = prefs.sort;
+
+        const counts = {};
+        items.forEach(it => counts[it.speciality] = (counts[it.speciality] || 0) + 1);
+        if (filters.spec !== 'All' && !counts[filters.spec]) filters.spec = 'All';
+        const chips = [`<button type="button" class="chip ${filters.spec === 'All' ? 'active' : ''}" data-spec="All">All <span class="count">${items.length}</span></button>`]
+            .concat(Object.keys(counts).sort().map(s =>
+                `<button type="button" class="chip ${filters.spec === s ? 'active' : ''}" data-spec="${esc(s)}">${esc(s)} <span class="count">${counts[s]}</span></button>`));
+        $('chips').innerHTML = items.length ? chips.join('') : '';
+
+        const hosts = new Set(items.map(i => i.host).filter(Boolean)).size;
+
+        $('summary').textContent = items.length
+            ? `Showing ${list.length} of ${items.length} article${items.length === 1 ? '' : 's'} from ${hosts} source${hosts === 1 ? '' : 's'}`
+            : '';
+        $('dlAllCount').textContent = items.length ? '(' + items.length + ')' : '';
+        $('dlViewCount').textContent = items.length ? '(' + list.length + ')' : '';
+        $('downloadBtn').disabled = items.length === 0;
+        $('clearBtn').disabled = items.length === 0;
+
+        let html = loading ? skeletonHtml(3) : '';
+        if (list.length) {
+            html += list.map(cardHtml).join('');
+        } else if (!loading) {
+            html = items.length
+                ? `<div class="empty" style="grid-column:1/-1"><i class="bi bi-funnel"></i>
+                       <h5 class="fw-bold mt-3 mb-1 text-dark">No articles match criteria</h5>
+                       <p class="text-muted mb-4">Try adjusting your search or category filters.</p>
+                       <button type="button" class="btn btn-primary px-4 rounded-pill" id="resetFilters">Reset Filters</button></div>`
+                : '';
+        }
+        box.innerHTML = html;
+    }
+
+    document.addEventListener('error', e => {
+        const t = e.target;
+        if (t && t.tagName === 'IMG' && t.closest('.media')) t.style.display = 'none';
+    }, true);
+    $('resultsList').addEventListener('click', e => {
+        const rm = e.target.closest('[data-remove]');
+        if (rm) {
+            items = items.filter(i => i.sourceUrl !== rm.getAttribute('data-remove'));
+            saveItems(); render();
+            return;
+        }
+        const cp = e.target.closest('[data-copy]');
+        if (cp) {
+            const link = cp.getAttribute('data-copy');
+            (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+                .then(() => toast('Link copied to clipboard', 'success'))
+                .catch(() => toast('Could not copy the link', 'danger'));
+            return;
+        }
+        const pv = e.target.closest('.news-preview');
+        if (pv) { pv.classList.toggle('expanded'); return; }
+        if (e.target.closest('#resetFilters')) {
+            filters = {q: '', spec: 'All'};
+            $('searchBox').value = '';
+            render();
+        }
+    });
+
+    $('chips').addEventListener('click', e => {
+        const c = e.target.closest('[data-spec]');
+        if (!c) return;
+        filters.spec = c.getAttribute('data-spec');
+        render();
+    });
+    $('searchBox').addEventListener('input', e => { filters.q = e.target.value; render(); });
+    $('sortSel').addEventListener('change', e => { prefs.sort = e.target.value; savePrefs(); render(); });
+    $('viewGrid').addEventListener('click', () => { prefs.view = 'grid'; savePrefs(); render(); });
+    $('viewList').addEventListener('click', () => { prefs.view = 'list'; savePrefs(); render(); });
+    $('fitFill').addEventListener('click', () => { prefs.fit = 'fill'; savePrefs(); render(); });
+    $('fitContain').addEventListener('click', () => { prefs.fit = 'contain'; savePrefs(); render(); });
+    $('clearBtn').addEventListener('click', () => {
+        if (!items.length) return;
+        if (confirm('Are you sure you want to remove all ' + items.length + ' articles from this dashboard? (Downloaded CSVs will not be affected)')) {
+            items = []; saveItems(); render();
+            toast('Dashboard successfully cleared', 'secondary');
+        }
+    });
+
+    // =====================================================================
+    // CSV format (same for Download, Template and Upload)
+    // =====================================================================
+    const CSV_HEADERS = ['Title', 'Source URL', 'Speciality', 'Image URL', 'Content Preview', 'Website'];
+    const LIMITS = {title: 250, preview: 500, url: 2000, host: 200};
+
+    function csvCell(v, guard) {
+        let s = String(v == null ? '' : v).replace(/\s*[\r\n]+\s*/g, ' ').trim();
+        if (guard && /^[=+\-@]/.test(s)) s = "'" + s;       // stops Excel formulas (downloads only)
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    function toCsv(rows, forApi) {
+        if (forApi) {
+            const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            const lines = rows.map(r => {
+                const title = csvCell(r.title, false);
+                const url = csvCell(r.sourceUrl, false);
+                const spec = csvCell(r.speciality, false);
+                const img = csvCell(r.imageUrl, false);
+                const preview = csvCell(r.contentPreview, false);
+                return `0,${title},${url},${spec},${img},${preview},${now},False`;
+            });
+            return lines.join('\r\n');
+        } else {
+            // Format for user download (includes headers)
+            const lines = [CSV_HEADERS.map(h => csvCell(h, false)).join(',')];
+            rows.forEach(r => lines.push(
+                [r.title, r.sourceUrl, r.speciality, r.imageUrl, r.contentPreview, r.host].map(v => csvCell(v, true)).join(',')));
+            return '\uFEFF' + lines.join('\r\n');
+        }
+    }
+
+    function downloadText(filename, text) {
+        const url = URL.createObjectURL(new Blob([text], {type: 'text/csv;charset=utf-8'}));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function stamp() {
+        const d = new Date(), p = n => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes());
+    }
+
+    function downloadCsv(rows, label) {
+        if (!rows.length) { toast('Nothing to download yet', 'warning'); return; }
+        downloadText('medical-intelligence-' + stamp() + '.csv', toCsv(rows, false));
+        toast('Downloaded ' + rows.length + ' article' + (rows.length === 1 ? '' : 's') + ' (' + label + ')', 'success');
+    }
+
+    $('dlAll').addEventListener('click', () => downloadCsv(items, 'All'));
+    $('dlView').addEventListener('click', () => downloadCsv(visibleItems(), 'Current View'));$('templateBtn').addEventListener('click', () => {
+        downloadText('medical-upload-template.csv', toCsv([{
+            title: 'Example headline about heart health',
+            sourceUrl: 'https://example.com/news/heart-health-update',
+            speciality: 'Cardiology',
+            imageUrl: 'https://example.com/images/heart.jpg',
+            contentPreview: 'A short summary of the article goes here.',
+            host: 'example.com'
+        }], false));
+    });
+    function parseCsv(text) {
+        text = text.replace(/^\uFEFF/, '');
+        const firstLine = text.split(/\r?\n/, 1)[0] || '';
+        const delim = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+        const rows = [];
+        let row = [], cell = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (inQuotes) {
+                if (ch === '"') {
+                    if (text[i + 1] === '"') { cell += '"'; i++; } else inQuotes = false;
+                } else cell += ch;
+            } else if (ch === '"') inQuotes = true;
+            else if (ch === delim) { row.push(cell); cell = ''; }
+            else if (ch === '\n' || ch === '\r') {
+                if (ch === '\r' && text[i + 1] === '\n') i++;
+                row.push(cell); cell = '';
+                if (row.some(c => c.trim() !== '')) rows.push(row);
+                row = [];
+            } else cell += ch;
+        }
+        row.push(cell);
+        if (row.some(c => c.trim() !== '')) rows.push(row);
+        return rows;
+    }
+
+    const ALIASES = {
+        title: ['title', 'headline', 'name'],
+        speciality: ['speciality', 'specialty', 'category'],
+        sourceUrl: ['sourceurl', 'url', 'link', 'source'],
+        imageUrl: ['imageurl', 'image', 'thumbnail', 'img'],
+        contentPreview: ['contentpreview', 'content', 'summary', 'description', 'preview'],
+        host: ['website', 'host', 'site']
+    };
+
+    const SPEC_ALIAS = {
+        'oncology': 'Oncologist', 'neurology': 'Neorologist', 'neurologist': 'Neorologist',
+        'pediatrics': 'Pediatrician', 'paediatrics': 'Pediatrician', 'dentistry': 'Dentist',
+        'cardiologist': 'Cardiology', 'general health': 'General Physician'
+    };
+
+    function resolveSpeciality(value) {
+        const v = String(value || '').trim();
+        if (!specialityNames.length) return v;
+        const find = n => specialityNames.find(x => x.toLowerCase() === String(n).toLowerCase());
+        return find(v) || find(SPEC_ALIAS[v.toLowerCase()] || '') || find('General Physician') || v;
+    }
+
+    function unguard(v) { return String(v || '').replace(/^'(?=[=+\-@])/, '').trim(); }
+    function tidy(v, max) { return String(v || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
+
+    // FIX: Read DB formats properly
+    function readRows(text) {
+        const rows = parseCsv(text);
+        if (rows.length === 0) return {error: 'The file is empty.'};
+
+        const list = [], skipped = [], firstSeen = new Map();
+        let fixedSpec = 0;
+
+        const isDbFormat = rows[0].length >= 7 && !isNaN(parseInt(rows[0][0]));
+
+        if (isDbFormat) {
+            rows.forEach((r, i) => {
+                const rowNo = i + 1;
+                if (r.length < 3) return;
+                const title = tidy(r[1], LIMITS.title);
+                const url = unguard(r[2]);
+
+                if (!title) { skipped.push({row: rowNo, reason: 'missing Title'}); return; }
+                if (!isHttp(url) || url.length > LIMITS.url) { skipped.push({row: rowNo, reason: 'Source URL missing or invalid'}); return; }
+                if (firstSeen.has(url)) { skipped.push({row: rowNo, reason: 'duplicate of row ' + firstSeen.get(url)}); return; }
+                firstSeen.set(url, rowNo);
+
+                const rawSpec = r[3];
+                const spec = resolveSpeciality(rawSpec);
+                if (spec !== rawSpec) fixedSpec++;
+
+                const img = unguard(r[4]);
+
+                list.push({
+                    row: rowNo,
+                    title: title,
+                    sourceUrl: url,
+                    speciality: spec,
+                    imageUrl: isHttp(img) && img.length <= LIMITS.url ? img : '',
+                    contentPreview: tidy(r[5], LIMITS.preview),
+                    host: hostOf(url)
+                });
+            });
+        } else {
+            if (rows.length < 2) return {error: 'The file has no data rows.'};
+            const header = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+            const col = {};
+            for (const key in ALIASES) col[key] = header.findIndex(h => ALIASES[key].includes(h));
+
+            if (col.title < 0 || col.sourceUrl < 0) {
+                return {error: 'Could not find the "Title" and "Source URL" columns in the first row.'};
+            }
+
+            rows.slice(1).forEach((r, i) => {
+                const rowNo = i + 2;
+                const get = key => col[key] >= 0 ? unguard(r[col[key]]) : '';
+                const title = tidy(get('title'), LIMITS.title);
+                const url = get('sourceUrl');
+
+                if (!title) { skipped.push({row: rowNo, reason: 'missing Title'}); return; }
+                if (!isHttp(url) || url.length > LIMITS.url) { skipped.push({row: rowNo, reason: 'Source URL missing or not a valid http(s) link'}); return; }
+                if (firstSeen.has(url)) { skipped.push({row: rowNo, reason: 'duplicate of row ' + firstSeen.get(url)}); return; }
+                firstSeen.set(url, rowNo);
+
+                const rawSpec = get('speciality');
+                const spec = resolveSpeciality(rawSpec);
+                if (spec !== rawSpec) fixedSpec++;
+
+                const img = get('imageUrl');
+
+                list.push({
+                    row: rowNo,
+                    title: title,
+                    sourceUrl: url,
+                    speciality: spec,
+                    imageUrl: isHttp(img) && img.length <= LIMITS.url ? img : '',
+                    contentPreview: tidy(get('contentPreview'), LIMITS.preview),
+                    host: tidy(get('host'), LIMITS.host) || hostOf(url)
+                });
+            });
+        }
+        return {list, skipped, fixedSpec};
+    }
+
+    // =====================================================================
+    // CSV: upload
+    // =====================================================================
+    const dz = $('dropzone'), fileInput =$('csvFile');
+    const MAX_REQUESTS = 80;
+    let pending = null, busy = false;
+
+    function setResult(kind, html) {
+        const o = $('uploadResult');
+        if (!kind) { o.className = 'alert mt-4 mb-0 d-none'; return; }
+        o.className = 'alert mt-4 mb-0 alert-' + kind;
+        o.innerHTML = html;
+    }
+
+    function clearPending() {
+        pending = null;
+        $('fileCard').classList.add('d-none');
+        $('fileSkipped').textContent = '';$('uploadBtn').disabled = true;
+    }
+
+    const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+    const SPIN = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>';
+
+    async function selectFile(file) {
+        setResult(null);
+        clearPending();
+        if (!file || busy) return;
+        if (!/\.csv$/i.test(file.name)) { setResult('danger', '<i class="bi bi-x-circle-fill me-2"></i>Please choose a valid .csv file.'); return; }
+        if (file.size > 5 * 1024 * 1024) { setResult('danger', '<i class="bi bi-x-circle-fill me-2"></i>File size exceeds the 5 MB limit.'); return; }
+
+        let text;
+        try { text = await file.text(); } catch (e) { setResult('danger', '<i class="bi bi-x-circle-fill me-2"></i>The file could not be read.'); return; }
+
+        const r = readRows(text);
+        if (r.error) { setResult('danger', '<i class="bi bi-x-circle-fill me-2"></i>' + esc(r.error)); return; }
+        if (!r.list.length) {
+            setResult('danger', '<i class="bi bi-x-circle-fill me-2"></i>No valid rows found. Every row needs a Title and a Source URL that starts with http.');
+            return;
+        }
+
+        pending = {name: file.name, list: r.list};
+        const notes = [];
+        if (r.skipped.length) notes.push(plural(r.skipped.length, 'row') + ' skipped');
+        if (r.fixedSpec) notes.push(plural(r.fixedSpec, 'speciality value') + ' matched to the DigiDr list');
+        $('fileName').textContent = file.name;
+        $('fileStats').textContent = plural(r.list.length, 'article') + ' ready to upload' + (notes.length ? ' · ' + notes.join(' · ') : '');
+        const shown = r.skipped.slice(0, 8).map(x => 'row ' + x.row + ' (' + x.reason + ')').join(', ');
+        $('fileSkipped').textContent = r.skipped.length ? 'Skipped: ' + shown + (r.skipped.length > 8 ? ' and ' + (r.skipped.length - 8) + ' more' : '') : '';
+        $('fileCard').classList.remove('d-none');$('uploadBtn').disabled = false;
+    }
+
+    async function sendRows(list, name) {
+        try {
+            const fd = new FormData();
+            fd.append('file', new Blob([toCsv(list, true)], {type: 'text/csv'}), name);
+            const res = await fetch('/api/upload-csv', {method: 'POST', body: fd});
+            let data = {};
+            try { data = await res.json(); } catch (e) { /* response was not JSON */ }
+            if (res.ok) return {ok: true, message: data.message};
+            return {ok: false, fatal: res.status !== 502, message: data.message || ('Upload failed (HTTP ' + res.status + ').')};
+        } catch (e) {
+            return {ok: false, fatal: true, message: 'Network error: ' + e.message};
+        }
+    }
+
+    async function isolate(list, name, state) {
+        if (!list.length || state.abort || state.allFail) return;
+        if (state.requests >= MAX_REQUESTS) { state.abort = 'too many attempts (' + MAX_REQUESTS + ')'; return; }
+
+        state.requests++;
+        const r = await sendRows(list, name);
+        setResult('info', SPIN + 'DigiDr rejected the file. Finding the failing rows... checked ' +
+            (state.saved.length + state.failed.length) + ' of ' + state.total + ' rows');
+
+        if (r.ok) { state.saved.push(...list); return; }
+        if (r.fatal) { state.abort = r.message; return; }
+        if (list.length === 1) {
+            state.failed.push({row: list[0], message: r.message});
+            if (state.saved.length === 0 && state.failed.length >= 6) state.allFail = true;
+            return;
+        }
+        const mid = list.length >> 1;
+        await isolate(list.slice(0, mid), name, state);
+        await isolate(list.slice(mid), name, state);
+    }
+
+    // FIX: Clear Dashboard automatically on new Upload
+    function addToDashboard(rows) {
+        items = [];
+        const res = addItems(rows, false);
+        filters = {q: '', spec: 'All'};
+        $('searchBox').value = '';
+        render();
+        return res.added;
+    }
+
+    function showDiagnosis(total, state, dbMessage) {
+        const saved = state.saved, failed = state.failed;
+        if (saved.length) addToDashboard(saved);
+
+        const FIELD = {title: 'Title', sourceUrl: 'Source URL', imageUrl: 'Image URL', contentPreview: 'Content Preview'};
+        const max = {title: 0, sourceUrl: 0, imageUrl: 0, contentPreview: 0};
+        const specs = new Set();
+        saved.forEach(r => { for (const k in max) max[k] = Math.max(max[k], (r[k] || '').length); specs.add(r.speciality); });
+        const hintsFor = r => {
+            const h = [];
+            if (saved.length) {
+                for (const k in max) if ((r[k] || '').length > max[k]) h.push(FIELD[k] + ' is ' + r[k].length + ' characters (longest accepted: ' + max[k] + ')');
+                if (!specs.has(r.speciality)) h.push('Speciality "' + r.speciality + '" was not used by any accepted row');
+            }
+            if (!h.length) h.push('Nothing unusual in the data. Most likely this Source URL is already stored in DigiDr.');
+            return h;
+        };
+
+        const everyRow = state.allFail || (saved.length === 0 && failed.length === total && total >= 2);
+        let html = '<div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Saved ' + saved.length + ' of ' + total + ' rows' +
+            (failed.length ? ' · ' + plural(failed.length, 'row') + ' rejected by DigiDr' : '') + '</div>' +
+            '<div class="small mb-2">DigiDr says: ' + esc(dbMessage) + '</div>';
+        if (state.abort) html += '<div class="small mb-2 text-danger"><strong>Stopped early:</strong> ' + esc(state.abort) + '.</div>';
+        if (everyRow) {
+            html += '<div class="small mb-2 text-danger"><strong>Every row tested fails</strong>. This is a format issue. Ensure the columns match the exact template.</div>';
+        } else if (saved.length) {
+            html += '<div class="small mb-2">The accepted rows are already in DigiDr. <strong>Do not upload the whole file again.</strong></div>';
+        }
+        if (failed.length) {
+            html += '<div style="max-height:220px;overflow:auto" class="bg-white rounded border mt-3"><table class="table table-sm align-middle mb-0 small">' +
+                '<thead class="table-light"><tr><th>Row</th><th>Article</th><th>What differs</th></tr></thead><tbody>' +
+                failed.map(f => '<tr><td class="fw-bold text-nowrap">' + f.row.row + '</td><td class="text-break">' + esc(f.row.title.slice(0, 90)) +
+                    '<div class="text-muted" style="font-size:.75rem">' + esc(f.row.sourceUrl) + '</div></td><td>' +
+                    hintsFor(f.row).map(esc).join('<br>') + '</td></tr>').join('') +
+                '</tbody></table></div>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger mt-3 rounded-pill px-3" id="dlFailedBtn"><i class="bi bi-download me-1"></i> Download failed rows</button>';
+        }
+        setResult(saved.length ? 'warning' : 'danger', html);
+        const dl = $('dlFailedBtn');
+        if (dl) dl.addEventListener('click', () => downloadText('failed-rows-' + stamp() + '.csv', toCsv(failed.map(f => f.row), false)));
+
+        if (saved.length) { clearPending(); toast(saved.length + ' of ' + total + ' rows uploaded', 'warning'); }
+        else $('uploadBtn').disabled = false;
+    }
+
+    async function uploadPending() {
+        if (!pending || busy) return;
+        busy = true;
+        $('uploadBtn').disabled = true;
+        $('upSpinner').classList.remove('d-none');
+        dz.classList.add('busy');
+        const name = pending.name, list = pending.list;
+        setResult('info', SPIN + 'Uploading ' + plural(list.length, 'article') + ' to DigiDr...');
+
+        try {
+            const first = await sendRows(list, name);
+
+            if (first.ok) {
+                const added = addToDashboard(list);
+                setResult('success', '<i class="bi bi-check-circle-fill me-2"></i> ' + esc(first.message || 'CSV uploaded to DigiDr.') +
+                    ' <strong>' + plural(list.length, 'article') + '</strong> uploaded' + (added ? ', ' + added + ' new on this dashboard' : '') + '.');
+                toast('CSV uploaded to DigiDr', 'success');
+                clearPending();
+                return;
+            }
+            if (first.fatal) {
+                setResult('danger', '<i class="bi bi-x-octagon-fill me-2"></i> ' + esc(first.message));
+                $('uploadBtn').disabled = false;
+                return;
+            }
+
+            const state = {saved: [], failed: [], requests: 0, total: list.length, abort: null, allFail: false};
+            if (list.length === 1) {
+                state.failed.push({row: list[0], message: first.message});
+            } else {
+                const mid = list.length >> 1;
+                await isolate(list.slice(0, mid), name, state);
+                await isolate(list.slice(mid), name, state);
+            }
+            showDiagnosis(list.length, state, first.message);
+        } catch (e) {
+            setResult('danger', '<i class="bi bi-x-octagon-fill me-2"></i> ' + esc(e.message));
+            $('uploadBtn').disabled = false;
+        } finally {
+            busy = false;
+            $('upSpinner').classList.add('d-none');
+            dz.classList.remove('busy');
+        }
+    }
+
+    dz.addEventListener('click', () => fileInput.click());
+    dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+    fileInput.addEventListener('click', e => e.stopPropagation());
+    fileInput.addEventListener('change', () => { selectFile(fileInput.files[0]); fileInput.value = ''; });
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('over'); }));
+    dz.addEventListener('drop', e => selectFile(e.dataTransfer.files[0]));
+    $('clearFileBtn').addEventListener('click', () => { clearPending(); setResult(null); });
+    $('uploadBtn').addEventListener('click', uploadPending);$('uploadModal').addEventListener('hidden.bs.modal', () => { if (!busy) { clearPending(); setResult(null); } });
+
+    // =====================================================================
+    // Scrape
+    // =====================================================================
+    async function triggerScrape() {
+        const urlInput = $('url').value.trim();
+        const specialityInput = $('speciality').value;
+        const limitInput = $('limit').value;
+        const btn = $('scrapeBtn');
+        const spinner = $('btnSpinner');
+        const btnText = $('btnText');
+        const statusAlert = $('statusAlert');
+
+        if (!urlInput) return;
+
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.innerText = 'Analyzing Source...';
+        statusAlert.classList.add('d-none');
+
+        // FIX: Clear previous dashboard data on new scrape
+        items = [];
+        loading = true;
+        render();
+
+        try {
+            const formData = new URLSearchParams();
+            formData.append('url', urlInput);
+            formData.append('speciality', specialityInput);
+            formData.append('limit', limitInput);
+
+            const response = await fetch('/api/scrape-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error('Server error ' + response.status + '. Check the server console.');
+            }
+
+            if (data.status === 'ERROR') {
+                showStatus('danger', '<i class="bi bi-x-octagon-fill me-2"></i> ' + esc(data.message));
+                return;
+            }
+
+            if (data.status === 'NO_MATCH') {
+                showStatus('warning',
+                    '<i class="bi bi-exclamation-triangle-fill me-2"></i> ' + esc(data.message) +
+                    ' <button type="button" class="btn btn-sm btn-warning ms-3 fw-bold shadow-sm rounded-pill px-3 mt-2 mt-md-0" onclick="scrapeAll()">' +
+                    '<i class="bi bi-collection-fill me-1"></i> Scrape All Specialities</button>');
+                return;
+            }
+
+            if (data.status === 'EMPTY' || !data.topics || data.topics.length === 0) {
+                showStatus('danger', '<i class="bi bi-x-circle-fill me-2"></i> ' +
+                    esc(data.message || 'Could not extract any articles from this URL.'));
+                return;
+            }
+
+            showStatus('success', '<i class="bi bi-check-circle-fill me-2"></i> ' + esc(data.message));
+
+            const pageHost = hostOf(/^https?:\/\//i.test(urlInput) ? urlInput : 'https://' + urlInput) || urlInput;
+            const now = new Date().toISOString();
+            addItems(data.topics.map(t => ({
+                title: t.title,
+                speciality: t.speciality,
+                sourceUrl: t.sourceUrl,
+                imageUrl: t.imageUrl,
+                contentPreview: t.contentPreview,
+                host: hostOf(t.sourceUrl) || pageHost,
+                addedAt: now
+            })), true);
+
+            filters = {q: '', spec: 'All'};
+            $('searchBox').value = '';$('url').value = '';
+
+        } catch (error) {
+            showStatus('danger', '<i class="bi bi-exclamation-octagon-fill me-2"></i> ' + esc(error.message));
+        } finally {
+            loading = false;
+            btn.disabled = false;
+            spinner.classList.add('d-none');
+            btnText.innerHTML = '<i class="bi bi-cloud-arrow-down-fill me-1"></i> Start Scraping';
+            render();
+        }
+    }
+
+    document.querySelectorAll('#mainNav .nav-link').forEach(a => a.addEventListener('click', () => {
+        const nav = $('mainNav');
+        if (nav.classList.contains('show')) bootstrap.Collapse.getOrCreateInstance(nav).hide();
+    }));
+    loadSpecialities();
+    render();
+</script>
 
 </body>
 </html>

@@ -28,7 +28,7 @@ public class AdminController {
     public String showAdminDashboard(Model model) {
         List<RssFeed> feeds = fetchAllFeeds();
         model.addAttribute("feeds", feeds);
-        return "admin"; // Renders src/main/resources/templates/admin.html
+        return "index"; // Renders src/main/resources/templates/index.html
     }
 
     /**
