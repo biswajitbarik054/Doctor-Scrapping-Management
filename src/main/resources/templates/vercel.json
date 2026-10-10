@@ -1,6 +1,1 @@
-{
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/admin.html" }
-  ]
-}
+   { "cleanUrls": true } 
